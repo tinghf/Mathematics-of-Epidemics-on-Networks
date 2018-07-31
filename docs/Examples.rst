@@ -126,6 +126,7 @@ Additional Examples
 Visualizing or animating disease spread
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+
 We can visualize snapshots or animations of disease spread in a network.
 
 .. toctree:: 
@@ -134,23 +135,35 @@ We can visualize snapshots or animations of disease spread in a network.
    Visualizing disease spread in a lattice network <examples/Simulation_Investigation.rst>
 
 
-Changing parameters
-^^^^^^^^^^^^^^^^^^^
+Non-uniform infectiousness
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Sometimes you might want to have the values of parameters change at different 
-times.
+Perhaps the population is made up of different types of individuals with different
+infectiousness.  This example considers a heterosexual population where one group
+is more infectious than the other.  This example includes a user-defined transmission
+function and uses the simulation investigation tools to look at the dynamics in
+each population.
 
-* :download:`SIS varying tau <examples/changing_parameters/SIS_change_tau.py>`
+.. toctree::
+   :maxdepth: 1
 
-* :download:`SIR varying tau <examples/changing_parameters/SIR_change_tau.py>`
+   Bipartite population <examples/bipartite.rst>
 
 
 Weighted networks
 ^^^^^^^^^^^^^^^^^
-You may have edges (or nodes) with weights affecting transmission or recovery
-rates.
 
-* :download:`SIS weighted edges <examples/weighted_graph/SIS_weighted.py>`
+You may have edges (or nodes) with weights affecting transmission or recovery
+rates.  (for this be aware that the syntax of edge/node attributes is different
+for networkx 2.x and 1.x).
+
+.. toctree::
+   :maxdepth: 1
+
+   SIS weighted edges <examples/SIS_weighted.rst>
+
+Other
+^^^^^
 
 Are you trying to do something but can't figure it out and would like an example?  
 

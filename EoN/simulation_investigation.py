@@ -12,8 +12,6 @@ from collections import defaultdict
 
 class Simulation_Investigation():
 
-    #I want to improve how the labels, colors, linetypes etc are passed through
-    #here.
     r'''Simulation_Display is a class which is used for creating a particular
     type of plot or an animation.
     
@@ -24,6 +22,8 @@ class Simulation_Investigation():
     A longer term goal is to have the *_from_graph methods be directly callable and
     read in the IC and then get   
     '''
+    #I want to improve how the labels, colors, linetypes etc are passed through
+    #here.
     
     class _time_series_():
         def __init__(self, t, S, I, R=None, colordict=None, label=None, **kwargs):
@@ -62,7 +62,7 @@ class Simulation_Investigation():
         self._node_history_ = node_history
         self.SIR = SIR
         self.sim_colordict = colordict
-        self.pos = None
+        self.pos = pos
         self.summary() #defines self._t_, self._S_, self._I_, and self._R_
         self._time_series_list_ = []
         self._simulation_time_series_ = self._time_series_(self._t_, self._S_, self._I_, self._R_, 
@@ -109,21 +109,28 @@ class Simulation_Investigation():
         status = self._node_history_[node][1][number_swaps-1]
         return status
 
-    def get_statuses(self, nodelist, time):
+    def get_statuses(self, nodelist=None, time=None):
         r'''
         returns the status of nodes at a given time.  
     
         Arguments :
     
-            nodelist Some sort of iterable of nodes (could even be the graph)
-            time (float)
+            nodelist (iterable, default None):
+                Some sort of iterable of nodes.
+                If default value, then returns statuses of all nodes.
+            time (float, default None)
                 the time of interest.
+                if default value, then returns initial time
     
         returns : 
             status (dict)
                 A dict whose keys are the nodes in nodelist giving their status at time.
 
         '''
+        if nodelist is None:
+            nodelist = self.G
+        if time is None:
+            time = self._t_[0]
         status = {}
         for node in nodelist:
             changetimes = self._node_history_[node][0]
@@ -132,12 +139,15 @@ class Simulation_Investigation():
         return status
     
 
-    def summary(self):
+    def summary(self, nodelist = None):
         r'''
         Provides the population-scale summary of the dynamics: t, S, I, and R
         
         Arguments :
-            empty
+            nodelist (default None)
+                The nodes that we want to focus on.  By default this is all nodes.
+                If you want all nodes, the most efficient thing to do is to
+                not include 'nodelist'.  Otherwise it will recalculate everything.
                     
         Returns :
             
@@ -147,31 +157,43 @@ class Simulation_Investigation():
                 t, S, I --- scipy arrays.
                 
         Assumes that all entries in node_history start with same tmin'''
-        try:
-            self._t_  #after first time through, don't recalculate.
-        except AttributeError: #not defined yet (first time through)
-            times = set()
-            delta = {'S':defaultdict(int), 'I':defaultdict(int), 'R':defaultdict(int)}
-            for node in self.G:
-                node_times = self._node_history_[node][0]
-                node_statuses = self._node_history_[node][1]
-                tmin = node_times[0] #should be the same for each node, but hard to choose a single node at start.
-                times.add(tmin)
-                delta[node_statuses[0]][tmin]+=1
-                for new_status, old_status, time in zip(node_statuses[1:], node_statuses[:-1], node_times[1:]):
-                    delta[new_status][time] = delta[new_status][time]+1
-                    delta[old_status][time] = delta[old_status][time]-1
-                    times.add(time)
-            self._t_ = scipy.array(sorted(list(times)))
+        if nodelist is None:  #calculate everything.
+            nodelist =self.G
+        if nodelist is self.G:
+            try:
+                self._t_  #after first time through, don't recalculate.
+                if self.SIR:
+                    return self._t_, self._S_, self._I_, self._R_
+                else:
+                    return self._t_, self._S_, self._I_
+            except AttributeError:
+                pass
+
+        times = set()
+        delta = {'S':defaultdict(int), 'I':defaultdict(int), 'R':defaultdict(int)}
+        for node in nodelist:
+            node_times = self._node_history_[node][0]
+            node_statuses = self._node_history_[node][1]
+            tmin = node_times[0] #should be the same for each node, but hard to choose a single node at start.
+            times.add(tmin)
+            delta[node_statuses[0]][tmin]+=1
+            for new_status, old_status, time in zip(node_statuses[1:], node_statuses[:-1], node_times[1:]):
+                delta[new_status][time] = delta[new_status][time]+1
+                delta[old_status][time] = delta[old_status][time]-1
+                times.add(time)
+        t = scipy.array(sorted(list(times)))
         
-            tmin = self._t_[0]
-            S=[delta['S'][tmin]]
-            I=[delta['I'][tmin]]
-            R=[delta['R'][tmin]]
-            for time in self._t_[1:]:
-                S.append(S[-1]+delta['S'][time])
-                I.append(I[-1]+delta['I'][time])
-                R.append(R[-1]+delta['R'][time])
+        tmin = t[0]
+        S=[delta['S'][tmin]]
+        I=[delta['I'][tmin]]
+        R=[delta['R'][tmin]]
+        for time in t[1:]:
+            S.append(S[-1]+delta['S'][time])
+            I.append(I[-1]+delta['I'][time])
+            R.append(R[-1]+delta['R'][time])
+
+        if nodelist == self.G:   #we're going to save these to avoid recalculating 
+            self._t_ = t
             self._S_ = scipy.array(S)
             self._I_ = scipy.array(I)
             if self.SIR:
@@ -179,11 +201,19 @@ class Simulation_Investigation():
             else:
                 self._R_ = None
         
-        if self.SIR:
-            return self._t_, self._S_, self._I_, self._R_
         else:
-            return self._t_, self._S_, self._I_
-            
+            S = scipy.array(S)
+            I = scipy.array(I)
+            if self.SIR:
+                R = scipy.array(R)
+            else:
+                R = None
+        
+            if self.SIR:
+                return t, S, I, R
+            else:
+                return t, S, I
+                
     def t(self):
         r''' Returns the times of events
         Generally better to get these all through summary()'''
@@ -569,38 +599,74 @@ class Simulation_Investigation():
         return         
 
 
-    def animate(self, frame_times=None, ts_plots = ['S', 'I', 'R'], ts_list = None, nodelist=None, IonTop=True, timelabel=r'$t$',  pos = None, **nx_kwargs):
+    def animate(self, frame_times=None, ts_plots = ['S', 'I', 'R'], 
+                ts_list = None, nodelist=None, IonTop=True, timelabel=r'$t$',  
+                pos = None, **nx_kwargs):
         r'''As in display, but this produces an animation.  
         
-        
-        Arguments :
-            The same as in display, except that time is replaced by frame_times
-            
-            frame_times (list/scipy array)
-                The times for animation frames.
-
-        Examples : 
-
         To display an animation where sim is the Simulation_Investigation object
         simply do
         
-        ::
-        
-            sim.animate()
-            plt.show()
+        sim.animate()
+        plt.show()
         
         To save an animation [on a mac with appropriate additional libraries
         installed], you can do
         
-        ::
-
-            ani = sim.animate()
-            ani.save(filename, fps=5, extra_args=['-vcodec', 'libx264'])
+        ani = sim.animate()
+        ani.save(filename, fps=5, extra_args=['-vcodec', 'libx264'])
         
         here ani is a matplotlib animation.
         See https://matplotlib.org/api/_as_gen/matplotlib.animation.Animation.save.html
         for more about the save command for matplotlib animations.
         
+        Arguments :
+            The same as in display, except that time is replaced by frame_times
+            
+            frame_times (list/scipy array)
+                The times for animation frames.  If nothing is given, then it
+                uses 101 times between 0 and t[-1]
+                
+            ts_plots (list of strings, default 'S', 'I', 'R')
+                The default means that there will be 3 plots showing time series
+                with the first showing S, the second I, and the third R.
+                
+                If one of these is not wanted, it can simply not be included in
+                the list. 
+                
+                Alternately if we want more than one to appear on the same plot
+                the entry should be something like 'SI' or 'IR' or 'SIR' and the
+                time series plot will show all of the plots.
+                
+                If this is an empty list, then only the network is shown, but 
+                with a larger figure.
+
+            
+            ts_list (list of timeseries objects - default None)
+                If multiple time series have been added, we might want to plot
+                only some of them.  This says which ones to plot.
+                The simulation is always included.
+            
+            nodelist (list, default None)
+                which nodes should be included in the network plot.  By default
+                this is the entire network.  
+                This also determines which nodes are on top of each other 
+                (particularly if IonTop is False).
+            
+            IonTop (boolean, default True)
+                In the network plot we put infected nodes on top.
+            
+            timelabel (string, default '$t$')
+                the horizontal label to be used on the time series plots
+                
+            pos 
+                overrides self.pos for this display (but does not overwrite 
+                self.pos.  Use set_pos if you want to do this)
+                
+            nx_kwargs 
+                any networkx keyword arguments to go into the network plot.
+                
+            
         '''
         
         if frame_times is None:
