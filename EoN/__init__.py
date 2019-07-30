@@ -38,12 +38,7 @@ We start with a few useful auxiliary functions
 '''
 
 __author__ = "Joel C. Miller, Istvan Z. Kiss, and Peter Simon"
-__version__ = "0.99.2rc10"
-
-
-#print("warning - EoN is currently under significant development.  Interface"
-#      +" may change with little if any warning until version 1.0.\n"
-#      +"The current version is {}\n".format(__version__))
+__version__ = "1.0.8rc4"
 
 
 #__all__ = 
@@ -68,7 +63,11 @@ def _get_rate_functions_(G, tau, gamma, transmission_weight = None,
             disease parameter giving typical recovery rate, 
         
         transmission_weight : string (default None)
-            `G.edge[u][v][transmission_weight]` scales up or down the recovery rate.
+            `G.adj[u][v][transmission_weight]` scales up or down the recovery rate.
+            (note this is G.edge[u][v][..] in networkx 1.x and
+            G.edges[u,v][..] in networkx 2.x.
+            The backwards compatible version is G.adj[u][v]
+            https://networkx.github.io/documentation/stable/release/migration_guide_from_1.x_to_2.0.html)
 
         recovery_weight : string       (default None)
             a label for a weight given to the nodes to scale their 
@@ -84,7 +83,7 @@ def _get_rate_functions_(G, tau, gamma, transmission_weight = None,
         trans_rate_fxn = lambda x, y: tau
     else:
         try:
-            trans_rate_fxn = lambda x, y: tau*G.edges[x,y][transmission_weight]
+            trans_rate_fxn = lambda x, y: tau*G.adj[x][y][transmission_weight]
         except AttributeError: #apparently you have networkx v1.x not v2.x
             trans_rate_fxn = lambda x, y: tau*G.edge[x][y][transmission_weight]
 

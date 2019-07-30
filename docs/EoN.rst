@@ -11,30 +11,46 @@ The algorithms are based on the book
 `Mathematics of Epidemics on Networks: from Exact to Approximate Models`_
 by Kiss, Miller & Simon
         
-Please cite the book if using these algorithms
+Please cite the book if using these algorithms.
+
+If you use EoN, please `leave a note here`_ 
+so that **I can get promoted / get funding**.  
+Or just do it because it makes me happy when people use the software.  And
+a happy developer will work to improve the software.
 
 For simulations, we assume that input networks are **NetworkX** 
 graphs; see https://networkx.github.io/
 
 
-**EoN** consists of two sets of algorithms.  
+**EoN** consists of several sets of algorithms.  
 
-- The first deals with **stochastic simulation of epidemics on networks**.  The most significant of these are `fast_SIS` and `fast_SIR` which significantly outperform Gillespie algorithms (also included).  These algorithms are discussed in more detail in the appendix of the book.
+- The first deals with **stochastic simulation of epidemics on networks**.  
+  The most significant of these are ``fast_SIS`` and ``fast_SIR`` which 
+  usually outperform Gillespie algorithms (also included).  These algorithms 
+  are discussed in more detail in the appendix of the book.
 
-
-- The second deals with **numerical solution of systems of equations** derived in the book.  For these it is possible to either provide the degree distribution, or simply use a network and let the code determine the degree distribution.
-
+- A significant extension of these simulations is a set of tools
+  designed to **visualize and animate simulated epidemics**, and
+  generally help investigate a given stochastic simulation.
+  
+- Another set deals with **numerical solution of systems of analytic equations** 
+  derived in the book.  For these it is possible to either provide the degree 
+  distribution, or simply use a network and let the code determine the degree 
+  distribution.
 
 - There are a few additional algorithms which are not described in the
   book, but which we believe will be useful. Most notably, related to 
   visualization and generation of animations.
 
-Distributed under MIT license.  See :download:`license.txt<../license.txt>` for full details.
+Distributed under MIT license.  See :download:`license.txt<../license.txt>` 
+for full details.
 
 
 Simulation Toolkit
 ------------------
-This submodule deals with epidemic simulation.  We start with a quick list of the functions with links to the individual functions.  A brief description is below.
+This submodule deals with epidemic simulation.  We start with a quick list of 
+the functions with links to the individual functions.  A brief description is 
+below.
 
 
 Quick list
@@ -43,14 +59,17 @@ Quick list
 .. currentmodule:: EoN
 
 .. autosummary::
-   :toctree: functions
-   
+   :toctree: functions/
+
    fast_SIR
    fast_nonMarkov_SIR
    fast_SIS
    fast_nonMarkov_SIS
    Gillespie_SIR
    Gillespie_SIS
+   Gillespie_Arbitrary
+   Gillespie_simple_contagion
+   Gillespie_complex_contagion
    basic_discrete_SIR
    basic_discrete_SIS
    discrete_SIR
@@ -68,37 +87,51 @@ Quick list
 
 Short descriptions
 ^^^^^^^^^^^^^^^^^^
-- Event-based algorithms: 
+- Event-based algorithms:
 
-  These algorithms use an efficient approach to simulate epidemics.  `fast_SIR` 
-  and `fast_SIS` assume constant transmission and recovery rates, while
-  `fast_nonMarkov_SIR` allows the user to specify the rules for transmission.
+  These algorithms use an efficient approach to simulate epidemics.  ``fast_SIR`` 
+  and ``fast_SIS`` assume constant transmission and recovery rates, while
+  ``fast_nonMarkov_SIR`` and ``fast_nonMarkov_SIS`` allow the user to specify  
+  more detailed rules for transmission.
   
   - **fast_SIR**
   - **fast_nonMarkov_SIR** 
   - **fast_SIS**
+  - **fast_nonMarkov_SIS**
 
 - Gillespie Algorithms
 
   These algorithms simulate epidemics assuming constant transmission and 
-  recovery rates.  They are commonly used, but are slower than event-based 
-  algorithms.  They are also less flexible and it is more difficult to avoid
-  the constant rate assumptions.
+  recovery rates.  They are commonly used, but in many cases are slower than
+  the event driven methods.  I do not see evidence that they are ever 
+  significantly faster.  It is not very practical to get away from the 
+  constant rate assumptions so I prefer to avoid them.  However, 
+  ``Gillespie_simple_contagion`` allows the user to do SEIR, SIRS, or any of a number
+  of other more exotic "simple contagion" scenarios that are not in the event-driven
+  code.  ``Gillespie_complex_contagion`` handles complex contagions, in which an
+  individual requires multiple partners to have a given state before it changes
+  status.  For legacy reasons, ``Gillespie_Arbitrary`` is included, it simply calls
+  ``Gillespie_simple_contagion``, and will be removed in future versions.
   
   - **Gillespie_SIR**
   - **Gillespie_SIS**
+  - **Gillespie_Arbitrary**
+  - **Gillespie_simple_contagion**
+  - **Gillespie_complex_contagion**
+  
 
 - Discrete-time algorithms
 
   These algirthms are appropriate for where we separate infection into 
-  generations.  We assume infection lasts a single time step.  The `basic_*` 
+  generations.  We assume infection lasts a single time step.  The ``basic_*`` 
   algorithms assume that transmission occurs with probability p for all edges.
-  In contrast `discrete_SIR` allows for very general user-specified
+  In contrast ``discrete_SIR`` allows for very general user-specified
   transmission rules.
   
   - **basic_discrete_SIR**
   - **basic_discrete_SIS**
   - **discrete_SIR**
+
 
 - Percolation-based approaches 
     
@@ -108,10 +141,14 @@ Short descriptions
   the most efficient way to simulate an epidemic.  However, these algorithms
   will be useful for estimating probability and size of epidemics. 
     
-  - **percolate_network** (undirected percolation corresponding to fixed transmission probability)
-  - **directed_percolate_network** (directed percolation corresponding to constant transmission and recovery rates)
-  - **nonMarkov_directed_percolate_network_with_timing** (uses user-generated duration and transmission time distributions)
-  - **nonMarkov_directed_percolate_network** (uses user-generated transmission rules)
+  - **percolate_network** (undirected percolation corresponding to fixed 
+    transmission probability)
+  - **directed_percolate_network** (directed percolation corresponding to 
+    constant transmission and recovery rates)
+  - **nonMarkov_directed_percolate_network_with_timing** (uses user-generated 
+    duration and transmission time distributions)
+  - **nonMarkov_directed_percolate_network** (uses user-generated transmission 
+    rules)
   - **estimate_SIR_prob_size** (estimates prob/size from an undirected percolated network - only appropriate if constant p)
   - **estimate_SIR_prob_size_from_dir_perc** (estimates epi prob and size from a given percolated network)
   - **estimate_directed_SIR_prob_size** (estimates based on constant transmission and recovery rates)
@@ -128,7 +165,22 @@ This includes automated generation of animations.
 This is particularly useful if we want to look at time series or at animations
 of the network as the disease spreads.
 
-Some :ref:`examples <Simulation_Investigation>` are provided.
+When EoN performs a simulation with ``return_full_data`` set to ``True``, it returns
+a Simulation_Investigation object.  At it's core, this has the data about when
+each node changed status and what its new status became.  This allows us to 
+generate plots of the network at any given instance in time and to produce 
+animations.
+
+The basic display produced by a Simulation_Investigation object shows the 
+network at a given snapshot in time on the left, and on the right it shows the
+time series of S, I, and (if SIR) R.  It has the option to add additional 
+curves that might have been calculated by an analytic model, or perhaps
+another simulation.
+
+In general, any of the dynamic simulations will produce a Simulation_Investigation
+object if we pass it ``return_full_data = True``.  
+
+Some examples appear in section :ref:`visualization`.
 
 Quick List
 ^^^^^^^^^^
@@ -137,7 +189,7 @@ Quick List
 
 .. autosummary::
    :toctree: functions
-   
+
    display
    animate
    node_history
@@ -148,13 +200,17 @@ Quick List
    S
    I
    R
+   transmissions
+   transmission_tree
    add_timeseries
    update_ts_kwargs
    update_ts_label
-   update_ts_colordict
+   update_ts_colordict 
+   update_ts_tex
    sim_update_kwargs
    sim_update_label
    sim_update_colordict
+   sim_update_tex
    set_pos
    
 Short description
@@ -178,16 +234,25 @@ Short description
   Often we'll want to be able to check what happened to specific nodes in the
   network, or we'll want to know what the time history of the outbreak looked
   like
-  
+
+
   - **node_history**
-  - **node_status**
-  - **get_statuses**
-  - **summary**
-  - **t**
-  - **S**
+  - **node_status** returns the status of a node at a given time
+  - **get_statuses** returns the status of a collection of nodes at
+     a given time (in a dict).
+  - **summary**  returns t, S, I, (and if SIR R) for the population
+    (or a subset of the population)
+  - **t** 
+  - **S** 
   - **I**
   - **R**
+  - **transmissions** returns a list of 3-tuples of the form (t, u, v) stating
+    that u transmitted to v at time t.
+  - **transmission_tree** returns a MultiDiGraph where an edge from u to v with
+    attribute time = t means that u transmitted to v at time t.  (For SIR this
+    is a tree or a forest).
   
+
 - Details for plotting
 
   The remaining commands are to do with the specifics of how the plots appear
@@ -195,11 +260,12 @@ Short description
   - **update_ts_kwargs**
   - **update_ts_label**
   - **update_ts_colordict**
+  - **update_ts_tex**
   - **sim_update_kwargs**
   - **sim_update_label**
   - **sim_update_colordict**
+  - **sim_update_tex**
   - **set_pos**
-
 
 
 
@@ -215,68 +281,68 @@ Quick list
 
 .. autosummary::
    :toctree: functions
-   
-    SIS_individual_based
-    SIS_individual_based_pure_IC
-    SIS_pair_based
-    SIS_pair_based_pure_IC
-    SIR_individual_based
-    SIR_individual_based_pure_IC
-    SIR_pair_based
-    SIR_pair_based_pure_IC
-    SIS_homogeneous_meanfield
-    SIR_homogeneous_meanfield
-    SIS_homogeneous_pairwise
-    SIS_homogeneous_pairwise_from_graph
-    SIR_homogeneous_pairwise
-    SIR_homogeneous_pairwise_from_graph
-    SIS_heterogeneous_meanfield
-    SIS_heterogeneous_meanfield_from_graph
-    SIR_heterogeneous_meanfield
-    SIR_heterogeneous_meanfield_from_graph
-    SIS_heterogeneous_pairwise
-    SIS_heterogeneous_pairwise_from_graph
-    SIR_heterogeneous_pairwise
-    SIR_heterogeneous_pairwise_from_graph
-    SIS_compact_pairwise
-    SIS_compact_pairwise_from_graph
-    SIR_compact_pairwise
-    SIR_compact_pairwise_from_graph
-    SIS_super_compact_pairwise
-    SIS_super_compact_pairwise_from_graph
-    SIR_super_compact_pairwise
-    SIR_super_compact_pairwise_from_graph
-    SIS_effective_degree
-    SIS_effective_degree_from_graph
-    SIR_effective_degree
-    SIR_effective_degree_from_graph
-    SIR_compact_effective_degree
-    SIR_compact_effective_degree_from_graph
-    SIS_compact_effective_degree
-    SIS_compact_effective_degree_from_graph
-    Epi_Prob_discrete
-    Epi_Prob_cts_time
-    Epi_Prob_non_Markovian
-    Attack_rate_discrete
-    Attack_rate_discrete_from_graph
-    Attack_rate_cts_time
-    Attack_rate_cts_time_from_graph
-    Attack_rate_non_Markovian
-    Attack_rate_discrete
-    EBCM_discrete
-    EBCM_discrete_from_graph
-    EBCM
-    EBCM_uniform_introduction
-    EBCM_from_graph
-    EBCM_pref_mix
-    EBCM_pref_mix_from_graph
-    EBCM_pref_mix_discrete
-    EBCM_pref_mix_discrete_from_graph
-    get_Pk
-    get_PGF
-    get_PGFPrime
-    get_PGFDPrime
-    estimate_R0
+
+   SIS_individual_based
+   SIS_individual_based_pure_IC
+   SIS_pair_based
+   SIS_pair_based_pure_IC
+   SIR_individual_based
+   SIR_individual_based_pure_IC
+   SIR_pair_based
+   SIR_pair_based_pure_IC
+   SIS_homogeneous_meanfield
+   SIR_homogeneous_meanfield
+   SIS_homogeneous_pairwise
+   SIS_homogeneous_pairwise_from_graph
+   SIR_homogeneous_pairwise
+   SIR_homogeneous_pairwise_from_graph
+   SIS_heterogeneous_meanfield
+   SIS_heterogeneous_meanfield_from_graph
+   SIR_heterogeneous_meanfield
+   SIR_heterogeneous_meanfield_from_graph
+   SIS_heterogeneous_pairwise
+   SIS_heterogeneous_pairwise_from_graph
+   SIR_heterogeneous_pairwise
+   SIR_heterogeneous_pairwise_from_graph
+   SIS_compact_pairwise
+   SIS_compact_pairwise_from_graph
+   SIR_compact_pairwise
+   SIR_compact_pairwise_from_graph
+   SIS_super_compact_pairwise
+   SIS_super_compact_pairwise_from_graph
+   SIR_super_compact_pairwise
+   SIR_super_compact_pairwise_from_graph
+   SIS_effective_degree
+   SIS_effective_degree_from_graph
+   SIR_effective_degree
+   SIR_effective_degree_from_graph
+   SIR_compact_effective_degree
+   SIR_compact_effective_degree_from_graph
+   SIS_compact_effective_degree
+   SIS_compact_effective_degree_from_graph
+   Epi_Prob_discrete
+   Epi_Prob_cts_time
+   Epi_Prob_non_Markovian
+   Attack_rate_discrete
+   Attack_rate_discrete_from_graph
+   Attack_rate_cts_time
+   Attack_rate_cts_time_from_graph
+   Attack_rate_non_Markovian
+   Attack_rate_discrete
+   EBCM_discrete
+   EBCM_discrete_from_graph
+   EBCM
+   EBCM_uniform_introduction
+   EBCM_from_graph
+   EBCM_pref_mix
+   EBCM_pref_mix_from_graph
+   EBCM_pref_mix_discrete
+   EBCM_pref_mix_discrete_from_graph
+   get_Pk
+   get_PGF
+   get_PGFPrime
+   get_PGFDPrime
+   estimate_R0
 
 Short description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -478,12 +544,9 @@ Short Description
     - **get_time_shift** (allows us to shift plots to eliminate the effect of early-time stochasticity)
     - **subsample** (allows us to take output given at a stochastic
       set of times and get output at given times - particularly useful
-      to allow for averageing multiple simulations)
-    - **node_status** returns the status of a node at a given time
-    - **get_statuses** returns the status of a collection of nodes at
-      a given time (in a dict).
+      to allow for averaging multiple simulations)
     
     
 .. _Mathematics of epidemics on networks\: from exact to approximate models: http://www.springer.com/us/book/9783319508047
-
+.. _leave a note here: https://github.com/springer-math/Mathematics-of-Epidemics-on-Networks/issues/31
 
