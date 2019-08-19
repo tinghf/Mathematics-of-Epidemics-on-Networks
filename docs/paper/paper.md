@@ -98,7 +98,7 @@ may be faster than the other), but the event-driven implementation can also hand
 non-Markovian dynamics.  In earlier versions, the event-driven simulations were 
 consistently faster than the Gillespie simulations, and thus they are named 
 `fast_SIR` and `fast_SIS`.  The Gillespie simulations were sped up using ideas
-from [holme] and [rejection].
+from [@holme2014model] and [@cota2017optimized].
 
 The algorithms can typically handle an SIR epidemic spreading on 
 hundreds of thousands of individuals within a few seconds on a laptop.  The SIS 
@@ -120,19 +120,28 @@ import matplotlib.pyplot as plt
 
 N = 10**6  #number of individuals
 kave = 5    #expected number of partners
+print('generating graph G with {} nodes'.format(N))
 G = nx.fast_gnp_random_graph(N, kave/(N-1)) #Erdős-Rényi graph
     
 rho = 0.005 #initial fraction infected
 tau = 0.3   #transmission rate
 gamma = 1.0 #recovery rate
+
+print('doing event-based simulation')
 t1, S1, I1, R1 = EoN.fast_SIR(G, tau, gamma, rho=rho)
+print('doing Gillespie simulation')
 t2, S2, I2, R2 = EoN.Gillespie_SIR(G, tau, gamma, rho=rho)
 
+print('done with simulations, now plotting')
 plt.plot(t1, I1, label = 'fast_SIR')
 plt.plot(t2, I2, label = 'Gillespie_SIR')
+plt.xlabel('$t$')
+plt.ylabel('Number infected')
 plt.legend()
 plt.show()
 ```
+
+This produces
 
 ![](SIR_sims.png)    
     
@@ -163,9 +172,15 @@ t2, S2, I2 = EoN.Gillespie_SIS(G, tau, gamma, rho=rho, tmax = 30)
 
 plt.plot(t1, I1, label = 'fast_SIS')
 plt.plot(t2, I2, label = 'Gillespie_SIS')
+plt.xlabel('$t$')
+plt.ylabel('Number infected')
 plt.legend()
 plt.show()
 ```
+
+This produces
+
+![](SIS_sims.png)
 
 We now consider an SIR disease spreading with non-Markovian dynamics.  We assume
 that the infection duration is gamma distributed, but the transmission rate is
@@ -193,12 +208,23 @@ G = nx.fast_gnp_random_graph(N, kave/(N-1)) #Erdős-Rényi graph
 tau = 0.3
 
 for cntr in range(10):
+    print(cntr)
     t, S, I, R = EoN.fast_nonMarkov_SIR(G, trans_time_fxn = trans_time_fxn,
                         rec_time_fxn = rec_time_fxn_gamma, trans_time_args = (tau,))
-    plt.plot(t, R)
 
+    #To reduce file size and make plotting faster, we'll just plot 1000
+    #data points.  It's not really needed here, but this demonstrates
+    #one of the available tools in EoN.
+
+    subsampled_ts = np.linspace(t[0], t[-1], 1000)
+    subI, subR = EoN.subsample(subsampled_ts, t, I, R) 
+    plt.plot(subsampled_ts, subI+subR)
+
+plt.xlabel('$t$')
+plt.ylabel('Number infected or recovered')
 plt.show()                                                            
 ```    
+This produces
 
 ![](nonMarkov.png)
 
@@ -223,7 +249,7 @@ We demonstrate an SIS pairwise model and an SIR edge-based compartmental model.
 Our first example uses an SIS homogeneous pairwise model.  This model uses the
 average degree of the population and then attempts to track the number of [SI]
 and [SS] pairs.   We assume a network with an average degree of 20.  The initial
-condition is that a fraction rho of the population is infected at random.  
+condition is that a fraction $\rho$ (`rho`) of the population is infected at random.  
 
 ```python
 import networkx as nx
@@ -243,10 +269,14 @@ t, S, I = EoN.SIS_homogeneous_pairwise(S0, I0, SI0, SS0, kave, tau, gamma,
                             tmax=10)
 plt.plot(t, S, label = 'S')
 plt.plot(t, I, label = 'I')
+plt.xlabel('$t$')
+plt.ylabel('Predicted numbers')
 plt.legend()
 plt.show()
 ```
-This produces ![](SIS_pairwise.png)
+This produces 
+
+![](SIS_pairwise.png)
 
 For ease of comparison with simulation, and consistency with existing literature,
 the output of the model should be interpreted in terms of an expected number of individuals
@@ -297,11 +327,15 @@ t, S, I, R = EoN.EBCM(N, psi, psiPrime, tau, gamma, phiS0, tmax = 10)
 plt.plot(t, S, label = 'S')
 plt.plot(t, I, label = 'I')
 plt.plot(t, R, label = 'R')
+plt.xlabel('$t$')
+plt.ylabel('Predicted proportions')
 plt.legend()
 plt.show()
 ```
 
-This produces ![](SIR_EBCM.png).
+This produces 
+
+![](SIR_EBCM.png).
 
 To be consistent with the other differential equations models, this EBCM implementation
 returns the expected *number* in each status, rather than the expected proportion.
@@ -435,15 +469,19 @@ plt.plot(t, S, label = 'Susceptible')
 plt.plot(t, E, label = 'Exposed')
 plt.plot(t, I, label = 'Infected')
 plt.plot(t, R, label = 'Recovered')
+plt.xlabel('$t$')
+plt.ylabel('Simulated numbers')
 plt.legend()
 plt.show()
 ```
 
-This produces ![](SEIR.png)
+This produces 
+
+![](SEIR.png)
     
 Now we show two cooperative SIR diseases.  In isolation, each of these diseases
 would be unable to start an epidemic.  However, together, they can, and depending
-on stochastic effects, we can see some intersting osillatory behavior.
+on stochastic effects, we can see some interesting osillatory behavior.
 
 To the best of  our knowledge, this oscillatory behavior has not been studied
 previously.
@@ -456,8 +494,6 @@ import matplotlib.pyplot as plt
 
 N = 1000000
 G = nx.fast_gnp_random_graph(N, 5./(N-1))
-
-print('got G')
 
 #In the below:
 #'SS' means an individual susceptible to both diseases
@@ -508,20 +544,20 @@ IC = defaultdict(lambda: 'SS')
 for individual in range(initial_size):
     IC[individual] = 'II'
 
-print('got IC')
-
 t, SS, SI, SR, IS, II, IR, RS, RI, RR = EoN.Gillespie_simple_contagion(G, H, J, IC, return_statuses,
                                         tmax = float('Inf'))
 
 plt.semilogy(t, IS+II+IR, '-.', label = 'Infected with disease 1')
 plt.semilogy(t, SI+II+RI, '-.', label = 'Infected with disease 2')
 
+plt.xlabel('$t$')
+plt.ylabel('Number infected')
 plt.legend()
 plt.show()
 ```
+This produces
 
-**still need to do this & remove print statements**
-![]()
+![](coop.png)
 
 ### Complex contagions
 
@@ -621,10 +657,16 @@ for rho in np.linspace(3./80, 7./80, 8):   #8 values from 3/80 to 7/80.
                             
     plt.plot(t, I)
     
+plt.xlabel('$t$')
+plt.ylabel('Number infected')
 plt.show()
 ```
 
-We get ![](cascades.png), which shows that if the initial proportion "infected"
+We get 
+
+![](cascades.png), 
+
+which shows that if the initial proportion "infected"
 is small enough the final size is comparable to the initial size.  However
 once the initial proportion exceeds a threshold, a global cascade occurs and 
 infects almost every individual.
@@ -663,6 +705,14 @@ then the data returned includes the full history of every individual in the netw
 In the SIS, SIR or simple contagion cases it also returns information about
 which individual induced a transition in some other individual.
 
+There are several visualization tools provided to produce output from the
+full data.  These allow us to produce a snapshot of the network at a given time.
+By default it also include the time series (e.g., S, I, and R) alongside the
+snapshot.  These can be removed, or replaced by other time series, for example
+multiple time series in the same axis, or time series generated by one of the
+differential equations models.  With appropriate additional packages needed for
+matplotlib's animation tools, the software can produce animations as well.
+
 For SIR outbreaks, this produces a transmission tree.  For SIS and simple contagions,
 it produces a directed multigraph showing the transmissions that occurred (technically
 this may not be a tree).  However for complex contagions, we cannot determine who
@@ -689,7 +739,9 @@ sim = EoN.Gillespie_SIR(G, 1, 1, return_full_data=True)
 sim.display(time = 1, **nx_kwargs)
 plt.show()
 ```
-This produces a snapshot at time 1: ![](karate_club.png).
+This produces a snapshot at time 1: 
+
+![](karate_club.png).
 
 
 
@@ -703,6 +755,7 @@ ax = fig.add_subplot(111)
 nx.draw(T, Tpos, ax=ax, node_size = 200, with_labels=True)
 plt.show()
 ```
+This plots the transmission tree:
 
 ![](karate_club_transmission_tree.png).
 
@@ -769,6 +822,8 @@ sim.add_timeseries(new_timeseries, label = 'Simulation',
 sim.display(time=6, node_size = 4, ts_plots=[['Inf'], ['Sus+Vac', 'Inf+Rec']])
 plt.show()
 ```
+This plots the simulation at time 6.
+
 ![](SIRV_display.png)
 
 We can also animate it
@@ -779,6 +834,14 @@ ani.save('SIRV_animate.mp4', fps=5, extra_args=['-vcodec', 'libx264'])
 ```
 
 ![](SIRV_animate.gif)
+
+## Discussion
+
+EoN provides a number of tools for studying infectious processes spreading in
+contact networks.  The examples given here are intended to demonstrate the
+range of EoN, but they represent only a fraction of the possibilities.
+
+Full documentation is available at https://epidemicsonnetworks.readthedocs.io/en/latest/
 
 # Dependencies:
 
